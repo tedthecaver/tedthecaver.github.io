@@ -10,9 +10,9 @@ There should be whitespace between paragraphs.
 
 There should be whitespace between paragraphs. We recommend including a README, or a file with information about your project.
 
-# Header 1
+# Bandit lvl 18
 
-This is a normal paragraph following a header. GitHub is a code hosting platform for version control and collaboration. It lets you and others work together on projects from anywhere.
+In this level we are told the password is stored in a readme file in the home directory. However our problem is that whenever we try to log in with ssh we are kicked out...
 
 ## Header 2
 
