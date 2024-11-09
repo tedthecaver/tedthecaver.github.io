@@ -4,7 +4,8 @@ layout: default
 
 Text can be **bold**, _italic_, ~~strikethrough~~ or `keyword`.
 
-[Link to another page](./another-page.html).
+[Link to another page](./https://tedthecaver.github.io/tedthecaver.github.io/2024/11/09/Bandit-lvl-18/
+).
 
 There should be whitespace between paragraphs.
 
