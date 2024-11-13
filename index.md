@@ -3,7 +3,7 @@ layout: default
 ---
 
 Text can be **bold**, _italic_, ~~strikethrough~~ or `keyword`.
-
+ 
 - [Link to bandit lvl 18](/_posts/2024-11-09-banditlvl18.md/)
 
 There should be whitespace between paragraphs.
