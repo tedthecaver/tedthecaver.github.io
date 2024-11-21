@@ -1,3 +1,9 @@
+---
+layout: post
+title: "Kioptrix"
+date: 2024-11-21
+---
+
 # Kioptrix 
 ---
 ![[Pasted image 20241109192312.png]]
