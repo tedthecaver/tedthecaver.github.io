@@ -4,15 +4,15 @@ layout: default
 
 Text can be **bold**, _italic_, ~~strikethrough~~ or `keyword`.
  
-- [Link to bandit lvl 18](/_posts/2024-11-09-banditlvl18.md/)
+- [Link to bandit lvl 18]
 
 There should be whitespace between paragraphs.
 
 There should be whitespace between paragraphs. We recommend including a README, or a file with information about your project.
 
-# Bandit lvl 18
+# [Bandit wargame](/_posts/2024-11-09-banditlvl18.md/)
 
-In this level we are told the password is stored in a readme file in the home directory. However our problem is that whenever we try to log in with ssh we are kicked out...
+Completing each level grants you the password for the next. Use Linux and networking fundamentals to progress through the levels and solve the many challenges along the way.  
 
 ## Header 2
 
