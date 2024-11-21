@@ -14,7 +14,7 @@ There should be whitespace between paragraphs. We recommend including a README, 
 Completing each level grants you the password for the next. Use Linux and networking fundamentals to progress through the levels and solve the many challenges along the way.  
 
 # [Kioptrix Machine](/posts/2024-11-21-Kioptrix.md/)
-Exploiting vulnerable machine with enumeration and exploitation techniques.
+Exploiting vulnerable machine with enumeration and exploitation techniques. please work.
 
 ## Header 2 
 
