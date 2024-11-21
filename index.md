@@ -13,7 +13,10 @@ There should be whitespace between paragraphs. We recommend including a README, 
 # [Bandit wargame](/_posts/2024-11-09-banditlvl18.md/)
 Completing each level grants you the password for the next. Use Linux and networking fundamentals to progress through the levels and solve the many challenges along the way.  
 
-## Header 2
+# [Kioptrix Machine](/posts/Kioptrix.md)
+Exploiting vulnerable machine.
+
+## Header 2 
 
 > This is a blockquote following a header.
 >
