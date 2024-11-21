@@ -11,7 +11,6 @@ There should be whitespace between paragraphs.
 There should be whitespace between paragraphs. We recommend including a README, or a file with information about your project.
 
 # [Bandit wargame](/_posts/2024-11-09-banditlvl18.md/)
-
 Completing each level grants you the password for the next. Use Linux and networking fundamentals to progress through the levels and solve the many challenges along the way.  
 
 ## Header 2
