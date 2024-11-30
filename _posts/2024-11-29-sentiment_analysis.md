@@ -186,7 +186,7 @@ print(posts_df.head())
 ```
 - converting the posts and comments into a pandas `DataFrame`
 
-![[Pasted image 20241119153723.png]]
+![picture](https://raw.githubusercontent.com/tedthecaver/tedthecaver.github.io/main/_posts/project23.png)
 - hmmm not the best output, let's try to clean up a bit more
 
 ### The "job" problem
