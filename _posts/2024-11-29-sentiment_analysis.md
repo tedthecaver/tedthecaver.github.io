@@ -201,7 +201,8 @@ To progress we need to get rid of the posts that don't pertain to what we are tr
 - But what about larger string of words --> lower accuracy of related posts?
 - This also should make sense but let's take a look anyways
 
-![https://raw.githubusercontent.com/tedthecaver/tedthecaver.github.io/main/_posts/](project3.png)
+![picture](https://raw.githubusercontent.com/tedthecaver/tedthecaver.github.io/main/_posts/project3.png)
+
 - a lot of these words have nothing to do with what we want to analyze 
 - let's take a small subset of these
 - Should the words be handpicked or through an algorithm? 
