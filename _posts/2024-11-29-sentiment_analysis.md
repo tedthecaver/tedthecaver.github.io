@@ -36,7 +36,7 @@ for post in subreddit.hot(limit=4):
 - We are testing to see if our reddit credentials have been successfully connected  
 - doing a proof of concept by printing out the top 4 posts in the r/datascience subreddit 
 
-![[project1.png]]
+![picture](https://raw.githubusercontent.com/tedthecaver/tedthecaver.github.io/main/_posts/project1.png)
 Success!
 
 ## Step 2 (preprocess our data)
@@ -89,7 +89,7 @@ print(comments)
 - there is one very important line of code here in `post.comments.replace_more(limit=0)`
 - to understand what this does let's look at a reddit post with a lot of activity 
 
-![[project2.png]]
+![picture](https://raw.githubusercontent.com/tedthecaver/tedthecaver.github.io/main/_posts/project2.png)
 - The + button highlighted in red is a "more comments loader" which serves the purpose of keeping the post looking less cluttered and less resource intensive. Think of how hard to read the comments would be if for the top comment there were 50 replies. Just to get to the 2nd comment on the post you would have to do a lot of scrolling. Additionally think of the strain on the website if every time you clicked on a post, reddit had to load every single comment. 
 - Now that we know the functionality we have to note that it hinders our comment fetching process. We want to get rid of this functionality so that we can fetch every comment in the post. That is where `post.comments.replace_more(limit=0)` comes into play. We simply set the number of + signs or "more comments loaders" to 0. 
 
@@ -201,7 +201,7 @@ To progress we need to get rid of the posts that don't pertain to what we are tr
 - But what about larger string of words --> lower accuracy of related posts?
 - This also should make sense but let's take a look anyways
 
-![[project3.png]]
+![https://raw.githubusercontent.com/tedthecaver/tedthecaver.github.io/main/_posts/](project3.png)
 - a lot of these words have nothing to do with what we want to analyze 
 - let's take a small subset of these
 - Should the words be handpicked or through an algorithm? 
@@ -234,7 +234,7 @@ merged_df.head()
 - here we are merging the comments and their respective posts in tabular form 
 - "`post_title`" and "`title`" are the same thing but we get an error when only including one of them
 
-![[project4.png]]
+![picture](https://raw.githubusercontent.com/tedthecaver/tedthecaver.github.io/main/_posts/project4.png)
 - we can get rid of `posts_title` 
 
 ```python
@@ -243,7 +243,7 @@ merged_df = merged_df.drop(columns = ["post_title"])
 
 merged_df.head()
 ```
-![[project5.png]]
+![picture](https://raw.githubusercontent.com/tedthecaver/tedthecaver.github.io/main/_posts/project5.png)
 - perfect 
 
 Let's check the general health of our dataset.
@@ -252,7 +252,7 @@ Let's check the general health of our dataset.
 # Check for missing values 
 merged_df.isnull().sum()
 ```
-![[project6.png]]
+![picture](https://raw.githubusercontent.com/tedthecaver/tedthecaver.github.io/main/_posts/project6.png)
 - perfect, no missing values in any of the rows 
 
 ```python
@@ -315,7 +315,7 @@ ValueError: Length of values (3256) does not match length of index (3616)
 ```python
 merged_df.describe()
 ```
-![[project7.png]]
+![picture](https://raw.githubusercontent.com/tedthecaver/tedthecaver.github.io/main/_posts/project7.png)
 Some interesting information here, our dataset seems to be retaining deleted comments and we also seem to have quite a few duplicate comments. The relation to the upvotes problem is not clear but let's fix the duplication problem at least. 
 
 ```python
@@ -324,7 +324,7 @@ merged_df = merged_df[merged_df.comment_text != "deleted"]
 
 merged_df.describe()
 ```
-![[project8.png]]
+![picture](https://raw.githubusercontent.com/tedthecaver/tedthecaver.github.io/main/_posts/project8.png)
 - the empty entry here is fine since it just means we do not have a most common value in `comment_text`
 
 #### Fixing the upvotes problem 
@@ -362,7 +362,7 @@ cleaned_comments = [{
 ```python
 merged_df.head()
 ```
-![[project9.png]]
+![picture](https://raw.githubusercontent.com/tedthecaver/tedthecaver.github.io/main/_posts/project9.png)
 - success!
 
 ## Step 4 (Data analysis)
@@ -391,7 +391,7 @@ merged_df["sentiment"] = merged_df["comment_text"].apply(lambda x: sia.polarity_
 
 merged_df.head()
 ```
-![[project10.png]]
+![picture](https://raw.githubusercontent.com/tedthecaver/tedthecaver.github.io/main/_posts/project10.png)
 - successfully added compound scores to the data frame
 
 Let's look at some basic data 
@@ -399,7 +399,7 @@ Let's look at some basic data
 ```python
 merged_df.describe()
 ```
-![[project11.png]]
+![picture](https://raw.githubusercontent.com/tedthecaver/tedthecaver.github.io/main/_posts/project11.png)
 - average compound score = 0.3, around neutral 
 - min and max compound scores fall in the range (-1,1) and are at the extremes of the interval so scoring should be working as intended 
 
@@ -415,7 +415,7 @@ import matplotlib.pyplot as plt
 # Scatter plot on sentiment score vs upvotes
 sns.scatterplot(x = 'sentiment', y = 'upvotes', data = merged_df)
 ```
-![[project12.png]]
+![picture](https://raw.githubusercontent.com/tedthecaver/tedthecaver.github.io/main/_posts/project12.png)
 - not much correlation between sentiment and the upvotes 
 - most comments have a low amount of upvotes regardless of sentiment
 - larger concentration of low upvotes for positive sentiment comments but that might be because there is more comments with positive sentiment than negative sentiment, let's test this theory 
@@ -424,7 +424,7 @@ sns.scatterplot(x = 'sentiment', y = 'upvotes', data = merged_df)
 # Plotting frequency of sentiment score 
 sns.histplot(data = merged_df, x = 'sentiment')
 ```
-![[project13.png]]
+![picture](https://raw.githubusercontent.com/tedthecaver/tedthecaver.github.io/main/_posts/project13.png)
 - theory confirmed, there are more comments with positive sentiment than negative sentiment
 - by far the highest frequency of comments have neutral sentiment
 
@@ -490,7 +490,7 @@ We saw that the sentiment regarding jobs in data science is generally neutral. L
 ```python
 sns.histplot(data = merged_df, x = 'final_score')
 ```
-![[project14.png]]
+![picture](https://raw.githubusercontent.com/tedthecaver/tedthecaver.github.io/main/_posts/project14.png)
 - yes most comments in the subreddit still have neutral sentiment 
 
 We can more clearly view the distribution with a kernel density estimation plot which will smooth out the above histogram,
@@ -498,7 +498,7 @@ We can more clearly view the distribution with a kernel density estimation plot 
 ```python
 sns.displot(merged_df, x="final_score", kind="kde")
 ```
-![[project15.png]]
+![picture](https://raw.githubusercontent.com/tedthecaver/tedthecaver.github.io/main/_posts/project15.png)
 - We note the data follows an imperfect normal distribution
 - ideally the normal distribution is symmetric if you take a vertical line and slice down the peak of the distribution 
 - however because our minimum upvotes was -46 ---> σ(-46) = -11.301 and the lowest possible sentiment score was -1, our lowest possible `final_score` is -12.3
@@ -535,7 +535,7 @@ plt.tight_layout(pad = 0)
 
 plt.show()
 ```
-![[project16.png]]
+![picture](https://raw.githubusercontent.com/tedthecaver/tedthecaver.github.io/main/_posts/project16.png)
 - wow that's a lot of words 
 - most of the words are technical but it is good to see "work" and "job" as two of the most common words since that means we at least did one thing right in our making of the dataset 
 
@@ -562,14 +562,14 @@ plt.tight_layout(pad = 0)
  
 plt.show()
 ```
-![[project17.png]]
+![picture](https://raw.githubusercontent.com/tedthecaver/tedthecaver.github.io/main/_posts/project17.png)
 -  most common words for `final_score` > 10
 -  again words are technical in nature 
 - "don't" being a very common word is funny 
 
 Let's up the positivity and retrieve data from columns with `final_score` > 30,
 
-![[project18.png]]
+![picture](https://raw.githubusercontent.com/tedthecaver/tedthecaver.github.io/main/_posts/project18.png)
 - interesting that "llm" is up here, perhaps language learning models are more positively regarded in terms of work?
 - "people" is also a common word, perhaps the working people or the people in this field are well regarded? 
 - "time" is a common word, data scientists have a lot of free time? or they feel their time is well spent and not wasted? 
@@ -577,14 +577,14 @@ Let's up the positivity and retrieve data from columns with `final_score` > 30,
 
 Let's move onto `final_score` < -2 which will give us some insight into the negative sentiment side of our data,
 
-![[project19.png]]
+![picture](https://raw.githubusercontent.com/tedthecaver/tedthecaver.github.io/main/_posts/project19.png)
 - "ai" seems to be a pretty common word, negative views towards ai in the workforce/job market? 
 - "business" has also skyrocketed compared to when we were looking at positive sentiment word clouds, the business side of data science is not particularly admired in this subreddit? 
 - "product" is also showing up as a common word, more fire to the assumption that the business side of data science is not held in high regard here
 
 Let's get a bit more negative and set `final_score` < 5,
 
-![[project20.png]]
+![picture](https://raw.githubusercontent.com/tedthecaver/tedthecaver.github.io/main/_posts/project20.png)
 - "lol"
 - "client", "value", "consultant", "deliver", "shareholder", all business related words are cropping up even more now that our sentiment is very negative
 
