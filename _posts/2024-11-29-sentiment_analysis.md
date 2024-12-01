@@ -5,7 +5,9 @@ date: 2024-11-29
 ---
 # ted
 
-My goal for this project is to analyze how people in data science feel about their jobs. More specifically I will will gather data from the r/datascience subreddit and figure out what the general vibes are there.
+My goal for this project is to analyze how people in data science feel about their jobs. More specifically I will will gather data from the r/datascience subreddit and figure out what the talk is there.
+
+The code notebook without annotations can be viewed [here](https://colab.research.google.com/drive/1odWelASLqHnBQAD_jeufof1eFgTUFeSg?usp=sharing)
 
 ## Step 1 (connect to our data source)
 ---
