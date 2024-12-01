@@ -195,14 +195,6 @@ print(posts_df.head())
 ---
 To progress we need to get rid of the posts that don't pertain to what we are trying to figure out, which is the sentiment on jobs in data science. How should we go about this? The method shouldn't be too hard, we just remove the posts that don't have the word "job" in them. But what about the words "internship", "salary", "work", "workplace" and more that I can't think of right now? What exactly is our criteria for this elimination? 
 
-| (blah blah)                               | Pros                             | Cons                            |
-| ----------------------------------------- | -------------------------------- | ------------------------------- |
-| large text file of words related to "job" | Larger data set to work with     | lower accuracy of related posts |
-| hand picked words related to "job"        | higher accuracy of related posts | Smaller data set to work with   |
-- Larger string of words --> larger data set is pretty intuitive
-- But what about larger string of words --> lower accuracy of related posts?
-- This also should make sense but let's take a look anyways
-
 ![picture](https://raw.githubusercontent.com/tedthecaver/tedthecaver.github.io/main/_posts/project3.png)
 
 - a lot of these words have nothing to do with what we want to analyze 
