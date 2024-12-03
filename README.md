@@ -1,1 +1,1 @@
-This is my blog to document my thought process while I solve various challenges and projects 
+This is my blog to document various cybersecurity and data science projects
