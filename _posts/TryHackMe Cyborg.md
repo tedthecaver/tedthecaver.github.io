@@ -1,3 +1,11 @@
+---
+layout: post
+title: "Cyborg"
+date: 2024-11-09
+---
+# ted
+
+
 # Enumeration 
 ---
 Given an ip address of 10.10.22.231, let's perform an `nmap` scan to find open ports.
