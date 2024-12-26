@@ -221,7 +221,7 @@ merged_df = pd.merge(
     comments_df,
     right_on = "post_title", # match on title in post 
     left_on = "title",       # match on post_title in comments 
-    how = "inner"            # keeps rows that match 
+    how = "inner"            # keeping rows that match 
     
 )
 merged_df.head()
