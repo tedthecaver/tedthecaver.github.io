@@ -168,7 +168,7 @@ df_cleaned.to_csv("web_analysis_cleaned.csv", index=False)
 
 df_cleaned.head()
 ```
-![](IMG-20250112164351526.png)
+![picture](https://raw.githubusercontent.com/tedthecaver/tedthecaver.github.io/main/_posts/IMG-20250112164351526.png)
 - nice
 
 ## Extracting JS and CSS file info
@@ -252,12 +252,12 @@ Now let us look at the two data frames we have created,
 ```python
 df[["Scripts", "Frameworks_JS"]]
 ```
-![](IMG-20250114151020617.png)
+![picture](https://raw.githubusercontent.com/tedthecaver/tedthecaver.github.io/main/_posts/IMG-20250114151020617.png)
 
 ```python
 df[["Scripts", "Frameworks_CSS"]]
 ```
-![](IMG-20250114151135864.png)
+![picture](https://raw.githubusercontent.com/tedthecaver/tedthecaver.github.io/main/_posts/IMG-20250114151135864.png)
 
 Both data frames seem to be formatted as intended. We have the `[]` to indicated an empty list and other wise we have our list of JSS and CS frameworks/libraries.
 
@@ -271,7 +271,7 @@ We can merge the two data frames we created with the main data frame that holds 
 df_merged = pd.merge(df,df_cleaned)
 df_merged.head()
 ```
-![](IMG-20250115154156800.png)
+![picture](https://raw.githubusercontent.com/tedthecaver/tedthecaver.github.io/main/_posts/IMG-20250115154156800.png)
 - we seem to have some conflicting information
 
 The problem we face is that we do have JS and CSS files however the frameworks are not showing up in the respective columns. This is most likely because we only provided 11 total frameworks for `regex` to match, so the filenames have frameworks that we have not specified.
@@ -308,7 +308,7 @@ framework_patterns = {
 ```
 - We've added a few more popular frameworks 
 
-![](IMG-20250115220344577.png)
+![picture](https://raw.githubusercontent.com/tedthecaver/tedthecaver.github.io/main/_posts/IMG-20250115220344577.png)
 - ouch looks like we only matched Next.js from our list 
 
 Let's cleanup and see how many missing rows we actually have. First we really do not need the `Scripts` and `Stylesheets` column anymore so let's remove those. 
@@ -319,20 +319,20 @@ df_merged_dropped = df_merged.drop(columns = ["Scripts", "Stylesheets"])
 
 df_merged_dropped.head()
 ```
-![](IMG-20250115225637982.png)
+![picture](https://raw.githubusercontent.com/tedthecaver/tedthecaver.github.io/main/_posts/IMG-20250115225637982.png)
 - perfect 
 
 ```python
 # Counting how many times each value occurs
 print(df_merged_dropped["Frameworks_JS"].value_counts())
 ```
-![](IMG-20250116003045193.png)
+![picture](https://raw.githubusercontent.com/tedthecaver/tedthecaver.github.io/main/_posts/IMG-20250116003045193.png)
 
 ```python
 # Counting how many times each value occurs
 print(df_merged_dropped["Frameworks_CSS"].value_counts())
 ```
-![](IMG-20250116003723424.png)
+![picture](https://raw.githubusercontent.com/tedthecaver/tedthecaver.github.io/main/_posts/IMG-20250116003723424.png)
 
 We have a very large portion of no values for the JS and CSS frameworks. This is likely due to the amateurity of our web scraper which wasn't able to collect scripts from a lot of the websites. 
 
@@ -350,7 +350,7 @@ Let's try adding some more frameworks to our regex list then,
 --- 
 Ok this is proving to be very complex, in addition to our empty framework entries I also noticed,
 
-![](IMG-20250116003723424.png)
+![picture](https://raw.githubusercontent.com/tedthecaver/tedthecaver.github.io/main/_posts/IMG-20250116003723424.png)
 - in the CSS column we have JS frameworks and vice versa 
 
 We need to redefine what we are trying to do, originally our goal was to identify the frameworks and technologies in use from the information we collected but the information we collected already identified those technologies.
@@ -372,7 +372,7 @@ df2 = pd.merge(df,df_merged_dropped)
 # Dropping the unwanted columns
 df3 = df2.drop(columns = ["Scripts", "Stylesheets", "Frameworks_JS", "Frameworks_CSS"])
 ```
-![](IMG-20250117140527682.png)
+![picture](https://raw.githubusercontent.com/tedthecaver/tedthecaver.github.io/main/_posts/IMG-20250117140527682.png)
 
 Our `df3` looks proper. 
 
@@ -415,10 +415,10 @@ df_tech = pd.DataFrame({"URL": df["URL"], "Technologies": df["Technologies"]})
 ---
 Nothing in the `Title` or `Description` has anything of use to us so we can remove those as well. 
 
-![](IMG-20250117174128222.png)
+![picture](https://raw.githubusercontent.com/tedthecaver/tedthecaver.github.io/main/_posts/IMG-20250117174128222.png)
 - nothing that will help us here 
 
-![](IMG-20250117174342542.png)
+![picture](https://raw.githubusercontent.com/tedthecaver/tedthecaver.github.io/main/_posts/IMG-20250117174342542.png)
 - or here
 
 ## CVE Search
@@ -429,8 +429,8 @@ For our CVE score we have 2 dimensions to look at, the amount of CVEs and the ac
 
 If we search for a framework such as node.js, 
 
-![](IMG-20250131142644446.png)
-![](IMG-20250131142806054.png)
+![picture](https://raw.githubusercontent.com/tedthecaver/tedthecaver.github.io/main/_posts/IMG-20250131142644446.png)
+![picture](https://raw.githubusercontent.com/tedthecaver/tedthecaver.github.io/main/_posts/IMG-20250131142806054.png)
 - there are 415 results for CVE's related to node.js 
 
 ## Dead end? 
