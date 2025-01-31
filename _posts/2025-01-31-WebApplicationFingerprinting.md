@@ -5,7 +5,6 @@ date: 2025-01-31
 ---
 # ted
 
-
 # Abstract
 ---
 The goal of this project is to use machine learning to classify web applications based on technologies and frameworks such as WordPress or Django. Each different technology and framework comes with its own vulnerabilities, so with the purpose of bug bounty hunting identifying what gears are turning behind a website will help immensely in the reconnaissance phase. 
