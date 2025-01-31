@@ -2,6 +2,9 @@
 layout: default
 ---
 
+# [Web Application analysis](_posts/2025-01-31-WebApplicationFingerprinting.md)
+In this project we create a data set of different technologies used in 1000 different websites with the goal of identifiying these technologies using machine learning. Follow along as we redefine our problems and reach an unsatisfying but important conclusion. 
+
 # [TryHackMe Cyborg](_posts/2024-12-25-Cyborg.md/)
 A box involving encrypted archives, source code analysis and more. Gain user and root access on this machine. 
 
