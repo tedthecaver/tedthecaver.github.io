@@ -9,6 +9,7 @@ date: 2025-01-31
 ---
 The goal of this project is to use machine learning to classify web applications based on technologies and frameworks such as WordPress or Django. Each different technology and framework comes with its own vulnerabilities, so with the purpose of bug bounty hunting identifying what gears are turning behind a website will help immensely in the reconnaissance phase. 
 
+The code without annotations can be found [here](https://colab.research.google.com/drive/1WLc-xPODU9aNX5U_SEE3ubckJaBTYCGq#scrollTo=G25nn9DCdB-N).
 
 # Step 1 (data collection)
 ---
@@ -106,6 +107,8 @@ else:
     print(f"Results saved to {output_file}")
 ```
 - the script for extracting the data we need 
+
+The CSV file of websites we are using can be found [here](https://gist.github.com/bejaneps/ba8d8eed85b0c289a05c750b3d825f61).
 
 But why are we gathering this specific data? Let's look at each piece of information we are collecting and understand why we are collecting it. 
 
