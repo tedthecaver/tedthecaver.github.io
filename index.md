@@ -3,7 +3,7 @@ layout: default
 ---
 
 # [Nullcon HackIM CTF Goa 2025](_posts/2025-02-05-Nullcon.md/)
-Writeups for the web challenge __Numberizer__ and the crypto challenge __kleinvieh__ from the Nullcon Goa capture the flag event. 
+Writeups for the web challenge _Numberizer_ and the crypto challenge _kleinvieh_ from the Nullcon Goa capture the flag event. 
 
 # [Web Application analysis](_posts/2025-01-31-WebApplicationFingerprinting.md/)
 In this project we create a data set of different technologies used in 1000 different websites with the goal of identifiying these technologies using machine learning. Follow along as we redefine our problems and reach an unsatisfying but important conclusion. 
