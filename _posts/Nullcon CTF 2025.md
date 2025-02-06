@@ -1,0 +1,276 @@
+# Numberizer #web
+---
+![](IMG-20250205182125956.png)
+
+A web challenge from Nullcon Goa. The premise is to get a negative sum from the application but things are not so easy...
+
+![](IMG-20250201131116272.png)
+- the website 
+
+```php
+<?php
+ini_set("error_reporting", 0);
+
+if(isset($_GET['source'])) {
+    highlight_file(__FILE__);
+}
+
+include "flag.php";
+
+$MAX_NUMS = 5;
+
+if(isset($_POST['numbers']) && is_array($_POST['numbers'])) {
+
+    $numbers = array();
+    $sum = 0;
+    for($i = 0; $i < $MAX_NUMS; $i++) {
+        if(!isset($_POST['numbers'][$i]) || strlen($_POST['numbers'][$i])>4 || !is_numeric($_POST['numbers'][$i])) {
+            continue;
+        }
+        $the_number = intval($_POST['numbers'][$i]);
+        if($the_number < 0) {
+            continue;
+        }
+        $numbers[] = $the_number;
+    }
+    $sum = intval(array_sum($numbers));
+
+
+    if($sum < 0) {
+        echo "You win a flag: $FLAG";
+    } else {
+        echo "You win nothing with number $sum ! :-(";
+    }
+}
+?>
+
+<html>
+    <head>
+        <title>Numberizer</title>
+    </head>
+    <body>
+        <h1>Numberizer</h1>
+        <form action="/" method="post">
+            <label for="numbers">Give me at most 10 numbers to sum!</label><br>
+            <?php
+            for($i = 0; $i < $MAX_NUMS; $i++) {
+                echo '<input type="text" name="numbers[]"><br>';
+            }
+            ?>
+            <button type="submit">Submit</button>
+        </form>
+        <p>To view the source code, <a href="/?source">click here.</a>
+    </body>
+</html>
+```
+- and the source code
+
+```php
+if($sum < 0) {
+        echo "You win a flag: $FLAG";
+    } else {
+        echo "You win nothing with number $sum ! :-(";
+    }
+```
+- we will get our flag if the sum output is less than 0
+
+![](IMG-20250201131508556.png)
+- negative numbers output 0 
+
+ Let's use Burp Suite's repeater to send our requests faster and see if there is any extra information we are missing. 
+
+![](IMG-20250201132420681.png)
+- we input 3,4,5,6,-6 but -6 is nulled to 0 
+
+![](IMG-20250201133407427.png)
+- trying `&&` we see the number 3 in the last entry is considered but `cat flag.php` is ignored
+
+![](IMG-20250201133911165.png)
+- but if we add two back ticks instead of && the 3 is nulled as well
+
+![](IMG-20250201151022387.png)
+- attempting to cause an integer overflow by adding extra square brackets we crash the web app (%5B%5D = [] in percent encoding)
+
+Let's try to look at the possible values we can supply to the number field, 
+
+![](IMG-20250202131253418.png)
+- The value of 420000000000 evaluates to a negative number so we can try that 
+
+![](IMG-20250202131923699.png)
+- nope doesn't work 
+
+We need to take a closer look at the restrictions that are placed on us, 
+
+```php
+if(!isset($_POST['numbers'][$i]) || strlen($_POST['numbers'][$i])>4
+```
+- this part of the code tells us that the max digits of a number must be 4 
+
+But this restriction is 4 characters not numbers as we see when we try to enter a decimal number,
+
+![](IMG-20250202150647370.png)
+- 3.33 gets floored to 3 and the total sum is 15 
+
+![](IMG-20250202150811942.png)
+- as soon as we go above 4 characters the number is not considered
+
+Ok at this point we can be pretty sure the solution will be an integer overflow. We need to supply a very large number so that php wraps it back around and considers it a negative number. 
+
+![](IMG-20250202151200641.png)
+- E catches my eye, we can supply a very large number using scientific notation 
+
+`5.0E+19` has 2 too many characters but we could try `5E99` which in regular terms would be $5 \times 10^{99}$. 
+
+![](IMG-20250202152804777.png)
+- success!!
+
+```
+ENO{INTVAL_IS_NOT_ALW4S_P0S1TiV3!}
+```
+
+# kleinvieh #crypto
+---
+![](IMG-20250205182159180.png)
+
+A crypto challenge from Nullcon Goa. The premise is to use the leaked info to reverse the encryption and retrieve the flag. 
+
+```python
+from Crypto.PublicKey import RSA
+  
+flag = int.from_bytes(open('flag.txt','r').read().strip().encode())
+key = RSA.generate(1024)
+  
+print(f'n = {key.n}')
+print(f'c = {pow(flag, key.e, key.n)}')
+phi = (key.p - 1) * (key.q - 1)
+print(f'strange = {pow(phi, 2, key.n)}')
+```
+- chall.py
+
+```
+n = 123478096241280364670962652250405187135677205589718111459493149962577739081187795982860395854714430939628907753414209475535232237859888263943995193440085650470423977781096613357495769010922395819095023507620908240797541546863744965624796522452543464875196533943396427785995290939050936636955447563027745679377
+c = 77628487658893896220661847757290784292662262378387512724956478473883885554341297046249919230536341773341256727418777179462763043017367869438255024390966651705078565690271228162236626313519640870358976726577499711921457546321449494612008358074930154972571393221926233201707908214569445622263631145131680881658
+strange = 11519395324733889428998199861620021305356608571856051121451410451257032517261285528888324473164306329355782680120640320262135517302025844260832350017955127625053351256653287330703220294568460211384842833586028123185201232184080106340230097212868897257794101622865852490355812546172336607114197297201223620901
+```
+- output.txt
+
+- n doesn't factor in factordb 
+- From the script we have $\Phi(n) = \sqrt{strange}$ $mod$ $n$
+
+We also know $\Phi(n) = (p-1)(q-1)$ and $strange = \Phi(n)^2$ $mod$ $n$.
+
+The problem we have is to calculate $\Phi(n)$, we need to break down $\sqrt{strange}$ mod n into $\sqrt{strange}$ mod p and $\sqrt{strange}$ mod q. However this requires us to factor n into its prime factors p and q which is computationally impossible since n has 309 digits. Finding p and q such that pq = n is also the reason why RSA is considered secure. 
+
+Let's do some math,
+
+$\Phi(n) = (p-1)(q-1)$
+$\Phi(n)^2 = [(p-1)(q-1)]^2$
+$\Phi(n)^2 = (pq-p-q+1)^2$
+
+Since $pq=n$ we have $[n-(p+q-1)]^2$. Let $s = p+q-1$.
+$\Phi(n)^2 = (n-s)^2$
+$\Phi(n)^2=n^2 -2sn +s^2$ 
+
+Now $n^2 \equiv 0 \pmod{n}$ and $2sn \equiv 0 \pmod{n}$,
+$\therefore \Phi(n)^2 \pmod{n} = s^2 \pmod{n}$ 
+
+$\therefore strange \equiv s^2 \pmod{n}$
+$strange \equiv (p+q-1)^2 \pmod{n}$
+
+This means that there is an integer i such that $strange + in = (p+q-1)^2$. When we find i such that $strange +in$ becomes a perfect square, we can calculate $\sqrt{strange+in}$ which equals $p+q-1$.  
+
+Now for our script (thank you ChatGPT).
+
+```python
+n = Integer(123478096241280364670962652250405187135677205589718111459493149962577739081187795982860395854714430939628907753414209475535232237859888263943995193440085650470423977781096613357495769010922395819095023507620908240797541546863744965624796522452543464875196533943396427785995290939050936636955447563027745679377)
+strange = Integer(11519395324733889428998199861620021305356608571856051121451410451257032517261285528888324473164306329355782680120640320262135517302025844260832350017955127625053351256653287330703220294568460211384842833586028123185201232184080106340230097212868897257794101622865852490355812546172336607114197297201223620901)
+
+found = False
+
+# Try small i values to find a perfect square
+for i in range(100):
+    answer = strange + i * n
+    if answer < 0:
+        continue  # Skip negative values
+    s = answer.isqrt()  # Use Sage's isqrt() for integer square root
+    if s * s == answer:
+        S = s + 1  # s = p + q - 1, so p + q = s + 1. Let S = p + q.
+        found = True
+        break
+
+if not found:
+    raise ValueError("increase i")
+else:
+    print(f"p + q = {S}")
+```
+- we use sage for the `isqrt` and `Integer` functions
+
+And our output,
+
+```
+p + q = 22481809986961800405368921812652156527422510773160869093556265754584857396963295298429074971900517830077667812953399750841901439062936297081983261621103598
+```
+
+Now that we have p + q we can solve for p and q through a quadratic equation. $x^2 -(p+q)x + pq = 0$. The roots of this equation will give us p and q. We already have $p + q = S$ and $pq = n$ so we are really just solving $x^2 -Sx +n=0$. 
+
+This is trivial,
+
+```python
+# Calculating discriminant (b^2 -4ac)
+discriminant = S * S - 4 * n
+
+# Calculating p and q
+p = (S + sqrt_discriminant) // 2
+q = (S - sqrt_discriminant) // 2
+
+print(f"p = {p}")
+print(f"q = {q}")
+```
+
+And our output...
+
+```
+p = 12937916729204455049441610275460889644199206394322510155783574380408186712821378269479850914675590487962811250494530943470244797591570589122839237590622767
+q = 9543893257757345355927311537191266883223304378838358937772691374176670684141917028949224057224927342114856562458868807371656641471365707959144024030480831
+```
+
+Nice! Let's double check to make sure pq = n then we can get to decrypting. 
+
+![](IMG-20250205151604236.png)
+- we have the correct p and q 
+
+Now for the RSA decryption,
+
+```python
+from math import gcd
+from Crypto.Util.number import inverse, long_to_bytes
+  
+# Given values
+p = 12937916729204455049441610275460889644199206394322510155783574380408186712821378269479850914675590487962811250494530943470244797591570589122839237590622767
+q = 9543893257757345355927311537191266883223304378838358937772691374176670684141917028949224057224927342114856562458868807371656641471365707959144024030480831
+n = 123478096241280364670962652250405187135677205589718111459493149962577739081187795982860395854714430939628907753414209475535232237859888263943995193440085650470423977781096613357495769010922395819095023507620908240797541546863744965624796522452543464875196533943396427785995290939050936636955447563027745679377
+e = 65537  # Common public exponent
+c = 77628487658893896220661847757290784292662262378387512724956478473883885554341297046249919230536341773341256727418777179462763043017367869438255024390966651705078565690271228162236626313519640870358976726577499711921457546321449494612008358074930154972571393221926233201707908214569445622263631145131680881658
+  
+# Step 1: Compute phi(n)
+phi = (p - 1) * (q - 1)
+  
+# Step 2: Compute the private key d
+d = inverse(e, phi)
+  
+# Step 3: Decrypt the ciphertext
+flag_int = pow(c, d, n)
+  
+# Convert the decrypted integer back to bytes
+flag_bytes = long_to_bytes(flag_int)
+flag = flag_bytes.decode()
+  
+print(flag)
+```
+
+Our flag...
+
+```
+ENO{4_b1t_0f_ph1_4nd_a_bi1_0f_bru13_f0rc3_br3ak5_1t}
+```
+
