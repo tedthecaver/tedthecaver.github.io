@@ -5,5 +5,8 @@ google_analytics:
 theme: jekyll-theme-hacker
 plugins:
   - jekyll-mathjax-configuration
+markdown: kramdown
+kramdown:
+  math_engine: mathjax
 
 
