@@ -2,7 +2,7 @@
 layout: default
 ---
 
-# [Nullcon Goa HackIM 2025]
+# [Nullcon HackIM CTF Goa 2025](_posts/2025-02-05-Nullcon.md/)
 Writeups for the web challenge Numberizer and the crypto challenge kleinvieh from the Nullcon Goa capture the flag event. 
 
 # [Web Application analysis](_posts/2025-01-31-WebApplicationFingerprinting.md/)
