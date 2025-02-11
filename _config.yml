@@ -3,8 +3,6 @@ description: Crawlthroughs and projects
 show_downloads: false
 google_analytics: 
 theme: jekyll-theme-hacker
-markdown: kramdown
-kramdown:
-  math_engine: mathjax
+
 
 
