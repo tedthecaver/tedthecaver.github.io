@@ -2,7 +2,7 @@ title: Ted's cave
 description: Crawlthroughs and projects
 show_downloads: false
 google_analytics: 
-theme: jekyll-theme-hacker
+remote_theme: b2a3e8/jekyll-theme-console
 
 
 
