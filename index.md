@@ -3,7 +3,7 @@ layout: default
 ---
 
 # [PwnMe CTF 2025](_posts/2025-03-04-PwnMe2025.md/)
-Writeups for the pwn challenge _GOT_ and the crypto challenges _Easy Diffy_ and _Square Power_.
+Writeups for the pwn challenge _GOT_ and the crypto challenges _Easy Diffy_ and _Square Power_ from the PwnMe 2025 capture the flag event.
 
 # [Nullcon HackIM CTF Goa 2025](_posts/2025-02-05-Nullcon.md/)
 Writeups for the web challenge _Numberizer_ and the crypto challenge _kleinvieh_ from the Nullcon Goa capture the flag event. 
