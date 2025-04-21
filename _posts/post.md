@@ -1,0 +1,328 @@
+# The MAC FAC #crypto 
+---
+> [!400 points] Description
+> Check out my new MAC generator! I know you are supposed to use random and secret IVs in CBC-AES mode, so I decided to improve upon standard MACs by implementing that. Good luck trying to forge any messages now!
+
+```python fold
+#!/usr/local/bin/python3
+from Crypto.Cipher import AES
+from Crypto.Util.strxor import *
+from Crypto.Util.number import *
+from Crypto.Util.Padding import *
+from secret import flag, xor_key, mac_key, admin_iv, admin_phrase
+import os
+
+banner  = """
+Welcome to the MAC FAC(tory). Here you can request prototype my secure MAC generation algorithm. I know no one can break it so I hid my flag inside the admin panel, but only I can access it. Have fun! 
+"""
+menu1 = """
+[1] - Generate a MAC 
+[2] - Verify a MAC
+[3] - View MAC Logs
+[4] - View Admin Panel
+[5] - Exit
+"""
+admin_banner = """
+There's no way you got in! You have to be cheating this bug will be reported and I will return stronger!
+""" + flag
+
+def xor(data: bytes, key: bytes) -> bytes: #Installing pwntools in docker was giving me issues so I have to port over xor from strxor
+    repeated_key = (key * (len(data) // len(key) + 1))[:len(data)]
+    return strxor(data, repeated_key)
+
+assert(len(mac_key) == 16)
+assert(len(xor_key) == 16)
+
+logs = []
+
+def CBC_MAC(msg, iv):
+    cipher = AES.new(mac_key, AES.MODE_CBC, iv) # Encrypt with CBC mode
+    padded = pad(msg, 16) # Pad the message
+    tag = cipher.encrypt(padded)[-16:] # only return the last block as the tag
+    msg_enc, iv_enc = encrypt_logs(padded, iv)
+    logs.append((f"User generated a MAC (msg={msg_enc.hex()}, IV={iv_enc.hex()}"))
+    return tag
+
+def encrypt_logs(msg, iv):
+    return (xor(msg, xor_key), xor(iv, xor_key))#Encrypts logs so users can't see other people's IVs and Messages
+    
+def verify(msg, iv, tag):
+    cipher = AES.new(mac_key, AES.MODE_CBC, iv)
+    padded = pad(msg, 16)
+    candidate = cipher.encrypt(padded)[-16:]
+    return candidate == tag
+
+def view_logs():
+    print("\n".join(logs))
+    return
+
+def setup_admin():
+    tag = CBC_MAC(admin_phrase, admin_iv)
+    return tag
+
+def verify_admin(msg, iv, user_tag, admin_tag):
+    if msg == admin_phrase:
+        print("This admin phrase can only be used once!")
+        return
+    
+    tag = CBC_MAC(msg, iv)
+    if (tag != user_tag): #Ensure msg and iv yield the provided tag
+        print("Computed: ", tag.hex())
+        print("Provided: ", user_tag.hex())
+        print("Computed MAC Tag doesn't match provided tag")
+        return
+    else:
+        if (tag == admin_tag):
+            print(admin_banner)
+            return
+        else:
+            print("Tag is invalid")
+
+def run():
+    admin_tag = setup_admin()
+    print(banner)
+    while True:
+        print(menu1)
+        usr_input = input("> ")
+        if usr_input == "1":
+            msg = input("Message: ")
+            print(msg)
+            if (len(msg.strip()) == 0):
+                print("Please input a valid message")
+                continue
+            iv = bytes.fromhex(input("IV (in hex): ").strip())
+            if (len(iv) != 16):
+                print("The IV has to be exactly 16 bytes")
+                continue
+            tag = CBC_MAC(msg.encode(), iv)
+            print("The MAC Tag for your message is: ", tag.hex())
+            continue
+        if usr_input == "2":
+            msg = input("Message: ")
+            if (len(msg.strip()) == 0):
+                print("Please input a valid message")
+                continue
+            iv = bytes.fromhex(input("IV (in hex): ").strip())
+            if (len(iv) != 16):
+                print("The IV has to be exactly 16 bytes")
+                continue
+            tag = bytes.fromhex(input("Tag (in hex): ").strip())
+            if (len(tag) != 16):
+                print("The MAC has to be exactly 16 bytes")
+                continue
+            valid = verify(msg.encode(), iv, tag)
+            if valid:
+                print("The tag was valid!")
+            else:
+                print("The tag was invalid!")
+            continue
+        if usr_input == "3":
+            view_logs()
+            continue
+        if usr_input == "4":
+            msg = input("Admin passphrase: ")
+            if (len(msg.strip()) == 0):
+                print("Please input a valid message")
+                continue
+            iv = bytes.fromhex(input("IV (in hex): ").strip())
+            if (len(iv) != 16):
+                print("The IV has to be exactly 16 bytes")
+                continue
+            tag = bytes.fromhex(input("Tag (in hex): ").strip())
+            if (len(tag) != 16):
+                print("The MAC has to be exactly 16 bytes")
+                continue
+            verify_admin(msg.encode(), iv, tag, admin_tag)
+            continue
+        if usr_input == "5":
+            break
+    exit()
+            
+
+if __name__ == '__main__':
+    run()
+```
+- server.py
+
+Here is the server interface,
+
+```
+Welcome to the MAC FAC(tory). Here you can request prototype my secure MAC generation algorithm. I know no one can break it so I hid my flag inside the admin panel, but only I can access it. Have fun!
+
+[1] - Generate a MAC
+[2] - Verify a MAC
+[3] - View MAC Logs
+[4] - View Admin Panel
+[5] - Exit
+>
+```
+
+This is a message forgery challenge where we need to authenticate as admin to view the admin panel. Authentication here is done through a MAC in AES-CBC mode. This means the last block of any ciphertext will be the authentication code (the MAC). 
+
+Our goal is as follows,
+
+1) recover the admin phrase and iv as well as the tag 
+2) generate a new phrase and iv that has the same authentication tag as the admin phrase. 
+
+Ok how to recover the admin phrase? If we choose option 3 and look at the logs we see that there is already a message and an iv there.
+
+```
+[1] - Generate a MAC
+[2] - Verify a MAC
+[3] - View MAC Logs
+[4] - View Admin Panel
+[5] - Exit
+> 3
+User generated a MAC (msg=02bb9663e7ad1c2b515ad3318400f571028c9647d5ce511430699e629a0eba4e27e1967eca8b5d1e753989749b10b34563a2d323abe331601d14f21ce474d831, IV=60bcb649dff4de35fcd365afc7edb048
+```
+
+How is the message and iv encrypted? We can take a look at the relevant source code,
+
+```python
+from secret import xor_key
+
+def encrypt_logs(msg, iv):
+    return (xor(msg, xor_key), xor(iv, xor_key))#Encrypts logs so users can't see other people's IVs and Messages
+```
+
+The log encryption is done through a simple xor operation and the `xor_key` is imported, heavily suggesting that it is being reused. 
+
+If we choose option 1 to generate a MAC our encrypted message and iv will be sent to the server logs. Since we know the message we sent and the encrypted message we can reverse the xor operation by, `msg ^ msg_enc = xor_key`. 
+
+With the `xor_key` we should be able to decrypt the admin message and iv.
+
+Get the admin phrase,
+
+```python fold
+from pwn import * 
+
+# our message after choosing option 1
+msg = b'there is someone under my bed send help please there is a person'
+
+# from the server logs (option 3)
+msg_enc = bytes.fromhex('c87ed8fb4544bd7ac4d420ba8e4a992f9c63d3ed4516f4649d872db28f05842fd2729de14508a42994cb2ab69840d73ed473cfec000da72985873fb299569824ac06ad993074c419f4b75fc7fb35e75a')
+
+xor_key = xor(msg, msg_enc)
+# print(xor_key.hex())
+
+# from the server logs (option 3)
+admin_enc = bytes.fromhex('fd629dc46127f44fa5e463f7865cd707fd559de05344b970c4d72ea498529838d8389dd94c01b57a818739b2994c91339c7bd8842d69d904e9aa42dae628fa47')
+
+admin_phrase = xor(admin_enc, xor_key)
+print(admin_phrase)
+```
+
+And the result,
+
+```
+b'At MAC FAC, my MAC is my password. Please verify me\r\r\r\r\r\r\r\r\r\r\r\r\r%\x0cU/4sY%q S]\x18\x06^8'
+```
+
+There is some junk at the end of the message because the `xor_key` is longer than the admin phrase. 
+
+_Note: we can get the admin iv in this step too but I want to go over the message forgery first since the admin iv will change every time we connect to the server_.
+
+We can generate the correct admin MAC by choosing option 1 and entering our admin phrase and iv but this still won't let us access the admin panel because of this logic in the source code,
+
+```python
+if msg == admin_phrase:
+        print("This admin phrase can only be used once!")
+        return
+```
+
+Therefore we need a new admin phrase and iv that generates the same MAC. Normally we shouldn't be able to do this but there is a weakness in this implementation.
+
+Let's take a look at how MAC's are generated.
+
+![](IMG-20250421154730643.png)
+
+We go through normal AES-CBC mode where the last block is the MAC. Surely nothing can go wrong....
+
+![](Pasted%20image%2020250421155140.png)
+- wrong! 
+
+Since xor is commutative, IV ^ $P_0$ = $P_0$ ^ IV. Therefore we can make a new message that generates the same MAC! This is why it is important that the IV always be 0 and not user controlled, when using AES-CBC to generate a MAC.
+
+Ok let's say we want a new message $Q$. If we want the same MAC as generated by P, it needs to satisfy $Q_0$ ^ new_iv = $P_0$ ^ IV. 
+
+`-->` new_iv = $Q_0$ ^ $P_0$ ^ IV
+
+Alright now we just have to choose a message Q and find its iv.
+
+```python
+from pwn import *
+
+admin_message = b'At MAC FAC, my MAC is my password. Please verify me'
+
+forged_message = b'At FAC FAC, my MAC is my password. Please verify me'
+
+# from the server logs (option 3)
+admin_iv_enc = bytes.fromhex('9cb510a112af6ffd24b68764aa256b73')
+
+# if you send a message with iv = 0 * 32 then the encrypted iv is the first 16 bytes of the xor_key
+xor_key = bytes.fromhex('54b8876c627a7b41de5987598bc8ad9b')
+
+admin_iv = xor(xor_key, admin_iv_enc)
+print(f"admin iv = {admin_iv.hex()}")
+
+# our new iv to go with the fake message and generate the same tag as admin message
+new_iv = xor(admin_message, admin_iv, forged_message)
+
+forged_iv = new_iv.hex()[:32]
+print(f" forged iv = {forged_iv}")
+```
+
+
+```
+admin iv = c80d97cd70d514bcfaef003d21edc6e8
+forged iv = c80d97c670d514bcfaef003d21edc6e8
+```
+
+Retrieve the admin MAC from the server using option 1,
+
+```
+[1] - Generate a MAC
+[2] - Verify a MAC
+[3] - View MAC Logs
+[4] - View Admin Panel
+[5] - Exit
+> 1
+Message: At MAC FAC, my MAC is my password. Please verify me
+At MAC FAC, my MAC is my password. Please verify me
+IV (in hex): c80d97cd70d514bcfaef003d21edc6e8
+The MAC Tag for your message is:  d54b33381cd8bb383cb9815c5b021ba9
+```
+
+And if we do the same thing with our forged message and iv we should get the same MAC....
+
+```
+[1] - Generate a MAC
+[2] - Verify a MAC
+[3] - View MAC Logs
+[4] - View Admin Panel
+[5] - Exit
+> 1
+Message: At FAC FAC, my MAC is my password. Please verify me
+At FAC FAC, my MAC is my password. Please verify me
+IV (in hex): c80d97c670d514bcfaef003d21edc6e8
+The MAC Tag for your message is:  d54b33381cd8bb383cb9815c5b021ba9
+```
+- the same! 
+
+Access the admin panel and get our flag.
+
+```
+[1] - Generate a MAC
+[2] - Verify a MAC
+[3] - View MAC Logs
+[4] - View Admin Panel
+[5] - Exit
+> 4
+Admin passphrase: At FAC FAC, my MAC is my password. Please verify me
+IV (in hex): c80d97c670d514bcfaef003d21edc6e8
+Tag (in hex): d54b33381cd8bb383cb9815c5b021ba9
+
+There's no way you got in! You have to be cheating this bug will be reported and I will return stronger!
+DawgCTF{m0r3_r4nd0mne55_15_n0t_4lw4y5_m0r3_53cur3}
+```
+- 🥶🥶🥶
