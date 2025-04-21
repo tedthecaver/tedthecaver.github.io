@@ -3,7 +3,7 @@ layout: default
 ---
 
 # [Dawg CTF 2025 - The MAC FAC](_posts/2025-04-21-DawgCTF2025.md/)
-Writeup for the crypto challenge _The MAC FAC_ from DawgCTF 2025. 
+Writeup for the crypto challenge _The MAC FAC_ from DawgCTF 2025. (Exams done so more writeups coming soon hopefully!)
 
 # [PwnMe CTF 2025](_posts/2025-03-04-PwnMe2025.md/)
 Writeups for the pwn challenge _GOT_ and the crypto challenges _Easy Diffy_ and _Square Power_ from the PwnMe 2025 capture the flag event.
