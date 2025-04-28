@@ -2,7 +2,7 @@
 layout: default
 ---
 
-# [UMDCTF 2025](_posts/DawgCTF2025.md/)
+# [UMDCTF 2025](_posts/2025-04-28-UMDCTF2025.md/)
 Writeups for the crypto challenge _obsidian-block_ and the pwn challenge _aura_ from UMDCTF 2025, hosted by University of Maryland, College Park.
 
 # [Dawg CTF 2025](_posts/2025-04-21-DawgCTF2025.md/)
