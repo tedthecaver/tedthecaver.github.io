@@ -2,6 +2,6 @@ I am Ibrahim Ahmed, 3rd year Mathematics and Statistics student at Queen's unive
 
 - ctf player for Queen's University
 
-Thanks for reading :) 
+Thanks for reading :3
 
 Contact: ibrahim.a101@outlook.com
