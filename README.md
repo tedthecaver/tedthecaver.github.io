@@ -1,6 +1,4 @@
-I am Ibrahim Ahmed, 3rd year Mathematics and Statistics student at Queen's university and this is my blog to document my various data science and cybersecurity related endeavors. I am currently interested in the field of cryptography and low level security/binary exploitation.
-
-- ctf player for Queen's University
+I am Ibrahim Ahmed, 3rd year Mathematics and Statistics student at Queen's university and this is my blog to document my various data science and cybersecurity related endeavors. I am currently interested in the field of cryptography and low level security/binary exploitation and am a ctf player for Queen's University's team Qu4cks formerly known as Q3CTF.
 
 Thanks for reading :3
 
