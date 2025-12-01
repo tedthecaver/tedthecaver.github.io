@@ -1,6 +1,8 @@
 ---
 layout: default
 ---
+# [HeroCTF 2025](_posts/2025-12-01-HeroCTF.md)
+Writeup for the pwn challenge _crash_ from HeroCTF 2025. 
 
 # [UMDCTF 2025](_posts/2025-04-28-UMDCTF2025.md/)
 Writeups for the crypto challenge _obsidian-block_ and the pwn challenge _aura_ from UMDCTF 2025, hosted by University of Maryland, College Park.
